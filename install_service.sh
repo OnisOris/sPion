@@ -1,7 +1,8 @@
 #!/bin/bash
 # remote_install.sh - Дистанционная установка/удаление сервиса sPion
 #
-# Скрипт скачивает installer.py из репозитория sPion, выполняет его с переданными параметрами,
+# Скрипт скачивает installer.py из репозитория sPion, предварительно создаёт на удалённом устройстве папку ~/code/
+# и клонирует репозиторий sPion (если он ещё не существует), затем выполняет installer.py с переданными параметрами,
 # а затем удаляет скачанный installer.py и сам себя.
 #
 # Использование:
@@ -10,7 +11,8 @@
 # ПРИМЕЧАНИЕ:
 # Если вы используете аутентификацию по SSH-ключам, можно убрать параметр --ssh_password.
 # Самоудаление происходит командой "rm -- "$0"" в конце скрипта.
-# sudo curl -sSL https://raw.githubusercontent.com/OnisOris/sPion/master/install.sh | sudo bash -s -- --ssh_host 192.168.137.57 --ssh_user pi --ssh_password raspberry --install
+# Пример вызова:
+# sudo curl -sSL https://raw.githubusercontent.com/OnisOris/sPion/refs/heads/main/install_service.sh | sudo bash -s -- --ssh_host 192.168.137.57 --ssh_user pi --ssh_password raspberry --install
 
 set -e
 
@@ -32,6 +34,14 @@ if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$ACTION" ]; then
     exit 1
 fi
 
+echo "Создание директории ~/code/ и клонирование репозитория sPion на удалённом устройстве..."
+if [ -n "$SSH_PASSWORD" ]; then
+    sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" \
+    "mkdir -p ~/code && cd ~/code && if [ ! -d sPion ]; then git clone https://github.com/OnisOris/sPion.git; fi"
+else
+    ssh "$SSH_USER@$SSH_HOST" "mkdir -p ~/code && cd ~/code && if [ ! -d sPion ]; then git clone https://github.com/OnisOris/sPion.git; fi"
+fi
+
 echo "Скачивание installer.py из репозитория..."
 curl -sSL "https://raw.githubusercontent.com/OnisOris/sPion/master/remote_installer/installer.py" -o installer.py
 
@@ -41,7 +51,6 @@ if [ ! -f installer.py ]; then
 fi
 
 echo "Запуск installer.py с параметрами: SSH_HOST=${SSH_HOST}, SSH_USER=${SSH_USER}, ACTION=${ACTION}"
-# Если SSH_PASSWORD не передан, параметр можно опустить
 if [ -n "$SSH_PASSWORD" ]; then
     python3 installer.py --ssh_host "$SSH_HOST" --ssh_user "$SSH_USER" --ssh_password "$SSH_PASSWORD" --$ACTION
 else
