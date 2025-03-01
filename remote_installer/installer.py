@@ -46,17 +46,17 @@ class RemoteServiceInstaller:
     def install(self):
         try:
             self.connect()
-            # Если сервис уже существует – обновляем репозиторий и перезапускаем сервис
+            # Если сервис уже существует – удаляем старый сервис для переустановки.
             exit_code, stdout, _ = self.exec_command("sudo systemctl list-unit-files | grep pion_server.service")
             if exit_code == 0 and stdout:
-                print("Pion server уже установлен. Обновляем репозиторий и перезапускаем сервис.")
-                self.exec_command("cd ~/code/sPion && git pull", timeout=30)
-                self.restart_service()
-                return
-
+                print("Pion server уже установлен. Удаляем старый сервис для переустановки.")
+                self.exec_command("sudo systemctl stop pion_server", timeout=10)
+                self.exec_command("sudo systemctl disable pion_server", timeout=10)
+                self.exec_command("sudo rm -f /etc/systemd/system/pion_server.service", timeout=10)
+                self.exec_command("sudo systemctl daemon-reload", timeout=10)
             print("\nНачинаем установку Pion server для Raspberry Pi Zero 2W...")
 
-            # Обновляем списки пакетов и устанавливаем apt-зависимости
+            # Установка зависимостей через apt-get
             exit_code, _, _ = self.exec_command_with_retry(
                 "sudo apt-get update && sudo apt-get install -y python3 python3-pip wget curl git",
                 timeout=60
@@ -64,7 +64,7 @@ class RemoteServiceInstaller:
             if exit_code != 0:
                 raise Exception("Ошибка установки зависимостей через apt-get")
 
-            # Выполняем установку зависимостей Pion (внешний скрипт установки)
+            # Выполняем установку зависимостей Pion (внешний скрипт)
             install_cmd = ("sudo curl -sSL https://raw.githubusercontent.com/OnisOris/pion/refs/heads/dev/install_scripts/install_linux.sh | sudo bash")
             exit_code, _, _ = self.exec_command(install_cmd, timeout=60)
             if exit_code != 0:
@@ -77,7 +77,7 @@ class RemoteServiceInstaller:
             if exit_code != 0:
                 raise Exception("Ошибка клонирования/обновления репозитория sPion")
 
-            # Создаем виртуальное окружение в корне репозитория, если его нет, и устанавливаем зависимости
+            # Создаем виртуальное окружение в корне репозитория sPion и устанавливаем зависимости
             venv_cmd = (
                 "cd ~/code/sPion && "
                 "if [ ! -d .venv ]; then "
@@ -93,7 +93,7 @@ class RemoteServiceInstaller:
             if exit_code != 0:
                 raise Exception("Ошибка создания виртуального окружения и установки зависимостей")
 
-            # Создаем systemd unit для сервиса с WorkingDirectory = ~/code/sPion
+            # Создаем новый systemd unit для сервиса
             unit_command = f"""sudo tee /etc/systemd/system/pion_server.service > /dev/null << 'EOF'
 [Unit]
 Description=Pion Server
@@ -181,13 +181,13 @@ class RemoteServiceRemover:
         try:
             self.connect()
             # Останавливаем сервис, если он запущен
-            self.exec_command("sudo systemctl stop pion_server")
+            self.exec_command("sudo systemctl stop pion_server", timeout=10)
             # Отключаем автозапуск
-            self.exec_command("sudo systemctl disable pion_server")
+            self.exec_command("sudo systemctl disable pion_server", timeout=10)
             # Удаляем unit-файл
-            self.exec_command("sudo rm -f /etc/systemd/system/pion_server.service")
+            self.exec_command("sudo rm -f /etc/systemd/system/pion_server.service", timeout=10)
             # Обновляем конфигурацию systemd
-            self.exec_command("sudo systemctl daemon-reload")
+            self.exec_command("sudo systemctl daemon-reload", timeout=10)
             print("\nСервис pion_server успешно удалён. Теперь можно провести тест установки.")
         except Exception as e:
             print(f"\nОшибка при удалении сервиса: {str(e)}")

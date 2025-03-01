@@ -60,5 +60,3 @@ fi
 echo "Очистка: удаление installer.py..."
 rm installer.py
 
-echo "Самоудаление скрипта..."
-rm -- "$0"
