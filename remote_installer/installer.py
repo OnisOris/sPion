@@ -46,7 +46,7 @@ class RemoteServiceInstaller:
     def install(self):
         try:
             self.connect()
-            # Если сервис уже существует – выводим статус и завершаем установку
+            # Если сервис уже существует – обновляем репозиторий и перезапускаем сервис
             exit_code, stdout, _ = self.exec_command("sudo systemctl list-unit-files | grep pion_server.service")
             if exit_code == 0 and stdout:
                 print("Pion server уже установлен. Обновляем репозиторий и перезапускаем сервис.")
@@ -56,11 +56,6 @@ class RemoteServiceInstaller:
 
             print("\nНачинаем установку Pion server для Raspberry Pi Zero 2W...")
 
-            # Создаем директорию для сервиса
-            exit_code, _, _ = self.exec_command("mkdir -p ~/code/server")
-            if exit_code != 0:
-                raise Exception("Ошибка создания директории ~/code/server")
-
             # Обновляем списки пакетов и устанавливаем apt-зависимости
             exit_code, _, _ = self.exec_command_with_retry(
                 "sudo apt-get update && sudo apt-get install -y python3 python3-pip wget curl git",
@@ -69,20 +64,36 @@ class RemoteServiceInstaller:
             if exit_code != 0:
                 raise Exception("Ошибка установки зависимостей через apt-get")
 
-            # Выполняем установку зависимостей Pion
-            install_cmd = ("cd ~/code/server && sudo curl -sSL "
-                           "https://raw.githubusercontent.com/OnisOris/pion/refs/heads/dev/install_scripts/install_linux.sh | sudo bash")
+            # Выполняем установку зависимостей Pion (внешний скрипт установки)
+            install_cmd = ("sudo curl -sSL https://raw.githubusercontent.com/OnisOris/pion/refs/heads/dev/install_scripts/install_linux.sh | sudo bash")
             exit_code, _, _ = self.exec_command(install_cmd, timeout=60)
             if exit_code != 0:
                 raise Exception("Ошибка установки зависимостей Pion")
 
-            # Клонируем или обновляем репозиторий sPion
-            clone_cmd = "mkdir -p ~/code && cd ~/code && if [ -d sPion ]; then cd sPion && git pull; else git clone https://github.com/OnisOris/sPion.git; fi"
+            # Клонируем или обновляем репозиторий sPion в ~/code/sPion
+            clone_cmd = ("mkdir -p ~/code && cd ~/code && "
+                         "if [ -d sPion ]; then cd sPion && git pull; else git clone https://github.com/OnisOris/sPion.git; fi")
             exit_code, _, _ = self.exec_command(clone_cmd, timeout=30)
             if exit_code != 0:
                 raise Exception("Ошибка клонирования/обновления репозитория sPion")
 
-            # Создаем systemd unit для сервиса
+            # Создаем виртуальное окружение в корне репозитория, если его нет, и устанавливаем зависимости
+            venv_cmd = (
+                "cd ~/code/sPion && "
+                "if [ ! -d .venv ]; then "
+                "python3 -m venv .venv && "
+                "source .venv/bin/activate && "
+                "pip install --upgrade pip && "
+                "pip install -r requirements.txt; "
+                "else "
+                "source .venv/bin/activate && pip install -r requirements.txt; "
+                "fi"
+            )
+            exit_code, _, _ = self.exec_command(venv_cmd, timeout=60)
+            if exit_code != 0:
+                raise Exception("Ошибка создания виртуального окружения и установки зависимостей")
+
+            # Создаем systemd unit для сервиса с WorkingDirectory = ~/code/sPion
             unit_command = f"""sudo tee /etc/systemd/system/pion_server.service > /dev/null << 'EOF'
 [Unit]
 Description=Pion Server
@@ -90,8 +101,8 @@ After=network.target
 
 [Service]
 User={self.ssh_user}
-WorkingDirectory=/home/{self.ssh_user}/code/sPion/service
-ExecStart=/bin/bash -c "source /home/{self.ssh_user}/code/sPion/service/.venv/bin/activate && nohup python3 /home/{self.ssh_user}/code/sPion/service/main.py >> /home/{self.ssh_user}/code/sPion/service/pion_server.log 2>&1"
+WorkingDirectory=/home/{self.ssh_user}/code/sPion
+ExecStart=/bin/bash -c "source /home/{self.ssh_user}/code/sPion/.venv/bin/activate && nohup python3 /home/{self.ssh_user}/code/sPion/main.py >> /home/{self.ssh_user}/code/sPion/pion_server.log 2>&1"
 Restart=always
 StandardOutput=null
 StandardError=null
@@ -104,15 +115,11 @@ EOF
             if exit_code != 0:
                 raise Exception("Ошибка создания файла сервиса pion_server.service")
 
-            # Перезагружаем конфигурацию systemd
+            # Перезагружаем конфигурацию systemd и запускаем сервис
             exit_code, _, _ = self.exec_command("sudo systemctl daemon-reload", timeout=15)
             if exit_code != 0:
                 raise Exception("Ошибка перезагрузки демона systemd")
-
-            # Если unit замаскирован, размаскируем его
             self.exec_command("sudo systemctl unmask pion_server.service", timeout=10)
-
-            # Включаем и запускаем сервис
             exit_code, _, _ = self.exec_command("sudo systemctl enable pion_server.service", timeout=15)
             if exit_code != 0:
                 raise Exception("Ошибка включения сервиса pion_server")
@@ -173,7 +180,7 @@ class RemoteServiceRemover:
     def remove(self):
         try:
             self.connect()
-            # Останавливаем сервис, если запущен
+            # Останавливаем сервис, если он запущен
             self.exec_command("sudo systemctl stop pion_server")
             # Отключаем автозапуск
             self.exec_command("sudo systemctl disable pion_server")
@@ -198,12 +205,13 @@ if __name__ == "__main__":
     parser.add_argument("--remove", action="store_true", help="Удалить сервис")
     args = parser.parse_args()
 
+    if args.remove:
+        remover = RemoteServiceRemover(args.ssh_host, args.ssh_user, args.ssh_password)
+        remover.remove()
+
     if args.install:
         installer = RemoteServiceInstaller(args.ssh_host, args.ssh_user, args.ssh_password)
         installer.install()
-    elif args.remove:
-        remover = RemoteServiceRemover(args.ssh_host, args.ssh_user, args.ssh_password)
-        remover.remove()
-    else:
+    elif not args.remove:
         print("Укажите либо --install, либо --remove")
         sys.exit(1)
