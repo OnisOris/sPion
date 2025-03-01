@@ -1,0 +1,4 @@
+paramiko
+pymavlink
+rich
+numpy
