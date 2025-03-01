@@ -3,14 +3,11 @@
 #
 # Скрипт скачивает installer.py из репозитория sPion, предварительно создаёт на удалённом устройстве папку ~/code/
 # и клонирует репозиторий sPion (если он ещё не существует), затем выполняет installer.py с переданными параметрами,
-# а затем удаляет скачанный installer.py и сам себя.
+# а затем удаляет скачанный installer.py.
 #
 # Использование:
 #   ./remote_install.sh --ssh_host <IP> --ssh_user <user> --ssh_password <password> [--install|--remove]
 #
-# ПРИМЕЧАНИЕ:
-# Если вы используете аутентификацию по SSH-ключам, можно убрать параметр --ssh_password.
-# Самоудаление происходит командой "rm -- "$0"" в конце скрипта.
 # Пример вызова:
 # sudo curl -sSL https://raw.githubusercontent.com/OnisOris/sPion/refs/heads/main/install_service.sh | sudo bash -s -- --ssh_host 192.168.137.57 --ssh_user pi --ssh_password raspberry --install
 
@@ -43,7 +40,7 @@ else
 fi
 
 echo "Скачивание installer.py из репозитория..."
-curl -sSL "https://raw.githubusercontent.com/OnisOris/sPion/master/remote_installer/installer.py" -o installer.py
+curl -sSL "https://raw.githubusercontent.com/OnisOris/sPion/refs/heads/main/remote_installer/installer.py" -o installer.py
 
 if [ ! -f installer.py ]; then
     echo "Ошибка загрузки installer.py"
@@ -59,4 +56,3 @@ fi
 
 echo "Очистка: удаление installer.py..."
 rm installer.py
-
