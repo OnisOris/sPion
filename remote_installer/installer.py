@@ -114,7 +114,7 @@ class RemoteServiceInstaller:
             [Service]
             User={self.ssh_user}
             WorkingDirectory=/home/{self.ssh_user}/code/sPion
-            ExecStart=/bin/bash -c "source /home/{self.ssh_user}/code/sPion/.venv/bin/activate && nohup python3 /home/{self.ssh_user}/code/sPion/main.py >> /home/{self.ssh_user}/code/sPion/pion_server.log 2>&1"
+            ExecStart=/bin/bash -c "cd /home/{self.ssh_user}/code/sPion && git pull || true; source /home/{self.ssh_user}/code/sPion/.venv/bin/activate && nohup python3 /home/{self.ssh_user}/code/sPion/main.py >> /home/{self.ssh_user}/code/sPion/pion_server.log 2>&1"
             Restart=always
             StandardOutput=null
             StandardError=null
