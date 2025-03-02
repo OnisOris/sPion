@@ -54,5 +54,3 @@ else
     python3 installer.py --ssh_host "$SSH_HOST" --ssh_user "$SSH_USER" --$ACTION
 fi
 
-echo "Очистка: удаление installer.py..."
-rm installer.py

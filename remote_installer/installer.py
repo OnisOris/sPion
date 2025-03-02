@@ -3,6 +3,7 @@ import time
 import argparse
 import paramiko
 import sys
+from textwrap import dedent
 
 class RemoteServiceInstaller:
     def __init__(self, ssh_host: str, ssh_user: str, ssh_password: str):
@@ -43,6 +44,7 @@ class RemoteServiceInstaller:
                 break
         return exit_code, stdout, stderr
 
+    
     def install(self):
         try:
             self.connect()
@@ -56,7 +58,7 @@ class RemoteServiceInstaller:
                 self.exec_command("sudo systemctl daemon-reload", timeout=10)
             print("\nНачинаем установку Pion server для Raspberry Pi Zero 2W...")
 
-            # Установка зависимостей через apt-get
+            # Установка apt-зависимостей
             exit_code, _, _ = self.exec_command_with_retry(
                 "sudo apt-get update && sudo apt-get install -y python3 python3-pip wget curl git",
                 timeout=60
@@ -64,15 +66,9 @@ class RemoteServiceInstaller:
             if exit_code != 0:
                 raise Exception("Ошибка установки зависимостей через apt-get")
 
-            # Выполняем установку зависимостей Pion (внешний скрипт)
-            install_cmd = ("sudo curl -sSL https://raw.githubusercontent.com/OnisOris/pion/refs/heads/dev/install_scripts/install_linux.sh | sudo bash")
-            exit_code, _, _ = self.exec_command(install_cmd, timeout=60)
-            if exit_code != 0:
-                raise Exception("Ошибка установки зависимостей Pion")
-
             # Клонируем или обновляем репозиторий sPion в ~/code/sPion
             clone_cmd = ("mkdir -p ~/code && cd ~/code && "
-                         "if [ -d sPion ]; then cd sPion && git pull; else git clone https://github.com/OnisOris/sPion.git; fi")
+                        "if [ -d sPion ]; then cd sPion && git pull; else git clone https://github.com/OnisOris/sPion.git; fi")
             exit_code, _, _ = self.exec_command(clone_cmd, timeout=30)
             if exit_code != 0:
                 raise Exception("Ошибка клонирования/обновления репозитория sPion")
@@ -93,24 +89,40 @@ class RemoteServiceInstaller:
             if exit_code != 0:
                 raise Exception("Ошибка создания виртуального окружения и установки зависимостей")
 
-            # Создаем новый systemd unit для сервиса
-            unit_command = f"""sudo tee /etc/systemd/system/pion_server.service > /dev/null << 'EOF'
-[Unit]
-Description=Pion Server
-After=network.target
+            # Если пакет pion уже установлен, удаляем его, чтобы установить заново
+            check_pion_cmd = "cd ~/code/sPion && source .venv/bin/activate && pip list | grep '^pion '"
+            exit_code, stdout, _ = self.exec_command(check_pion_cmd, timeout=15)
+            if stdout:
+                print("Пакет pion обнаружен, удаляем его...")
+                uninstall_cmd = "cd ~/code/sPion && source .venv/bin/activate && pip uninstall -y pion"
+                exit_code, _, _ = self.exec_command(uninstall_cmd, timeout=15)
+                if exit_code != 0:
+                    raise Exception("Ошибка удаления пакета pion из виртуального окружения")
 
-[Service]
-User={self.ssh_user}
-WorkingDirectory=/home/{self.ssh_user}/code/sPion
-ExecStart=/bin/bash -c "source /home/{self.ssh_user}/code/sPion/.venv/bin/activate && nohup python3 /home/{self.ssh_user}/code/sPion/main.py >> /home/{self.ssh_user}/code/sPion/pion_server.log 2>&1"
-Restart=always
-StandardOutput=null
-StandardError=null
+            # Выполняем установку зависимостей Pion через внешний скрипт
+            install_cmd = ("cd ~/code/sPion && sudo -E curl -sSL https://raw.githubusercontent.com/OnisOris/pion/refs/heads/dev/install_scripts/install_linux.sh | sudo -E bash")
+            exit_code, _, _ = self.exec_command(install_cmd, timeout=60)
+            if exit_code != 0:
+                raise Exception("Ошибка установки зависимостей Pion")
 
-[Install]
-WantedBy=multi-user.target
-EOF
-"""
+            # Формируем unit‑файл без лишних отступов
+            unit_content = dedent(f"""\
+            [Unit]
+            Description=Pion Server
+            After=network.target
+
+            [Service]
+            User={self.ssh_user}
+            WorkingDirectory=/home/{self.ssh_user}/code/sPion
+            ExecStart=/bin/bash -c "source /home/{self.ssh_user}/code/sPion/.venv/bin/activate && nohup python3 /home/{self.ssh_user}/code/sPion/main.py >> /home/{self.ssh_user}/code/sPion/pion_server.log 2>&1"
+            Restart=always
+            StandardOutput=null
+            StandardError=null
+
+            [Install]
+            WantedBy=multi-user.target
+            """)
+            unit_command = f"echo '{unit_content}' | sudo tee /etc/systemd/system/pion_server.service > /dev/null"
             exit_code, _, _ = self.exec_command(unit_command, timeout=15)
             if exit_code != 0:
                 raise Exception("Ошибка создания файла сервиса pion_server.service")
@@ -142,7 +154,7 @@ EOF
         finally:
             self.ssh.close()
             print("SSH-соединение закрыто.")
-
+            
     def restart_service(self):
         # Обновляем репозиторий и перезапускаем сервис
         self.exec_command("cd ~/code/sPion && git pull", timeout=30)
@@ -184,7 +196,7 @@ class RemoteServiceRemover:
             self.exec_command("sudo systemctl stop pion_server", timeout=10)
             # Отключаем автозапуск
             self.exec_command("sudo systemctl disable pion_server", timeout=10)
-            # Удаляем unit-файл
+            # Удаляем unit‑файл
             self.exec_command("sudo rm -f /etc/systemd/system/pion_server.service", timeout=10)
             # Обновляем конфигурацию systemd
             self.exec_command("sudo systemctl daemon-reload", timeout=10)
