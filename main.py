@@ -23,7 +23,7 @@ def get_local_ip():
 def main():
     # Получаем локальный IP-адрес
     ip = get_local_ip()
-    drone = Pion(ip="127.0.0.1", mavlink_port=5656, name=f"Drone-{ip}", dt=0.01, logger=True, max_speed=0.5)
+    drone = Pion(ip="127.0.0.1", mavlink_port=5656, name=f"Drone-{ip}", dt=0.001, logger=True, max_speed=0.5)
     swarm_comm = SwarmCommunicator(control_object=drone, broadcast_port=37020, broadcast_interval=0.5, ip=ip)
     swarm_comm.start()
     print(f"SwarmCommunicator запущен для {drone.name} с IP {ip}")
