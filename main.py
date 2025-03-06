@@ -4,7 +4,7 @@ import time
 from pion import Pion
 from pion.functions import compute_swarm_velocity_boids 
 from pion.server import SwarmCommunicator
-from typing import Any, Optional, override
+from typing import Any, Optional
 import numpy as np
 
 class Swarmc(SwarmCommunicator):
@@ -28,7 +28,6 @@ class Swarmc(SwarmCommunicator):
                  instance_number = instance_number,
                  time_sleep_update_velocity = time_sleep_update_velocity,
                  params = params)
-    @override
     def update_swarm_control(self, target_point) -> None:
         new_vel = compute_swarm_velocity_boids(self.control_object.position, self.env, target_point)
         self.control_object.t_speed = np.array([new_vel[0], new_vel[1], 0, 0])
