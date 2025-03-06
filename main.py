@@ -3,6 +3,29 @@ import socket
 import time
 from pion import Pion
 from pion.server import SwarmCommunicator
+from typing import Any, Optional
+
+class Swarmc(SwarmCommunicator):
+    def __init__(self,
+                 control_object: Any,
+                 broadcast_port: int = 37020, 
+                 broadcast_interval: float = 0.05,
+                 safety_radius: float = 1.,
+                 max_speed: float = 1.,
+                 ip = None,
+                 instance_number = None,
+                 time_sleep_update_velocity: float = 0.1,
+                 params: Optional[dict] = None):
+        SwarmCommunicator.__init__(self,
+                 control_object = control_object,
+                 broadcast_port = broadcast_port, 
+                 broadcast_interval = broadcast_interval,
+                 safety_radius = safety_radius,
+                 max_speed = max_speed,
+                 ip = ip,
+                 instance_number = instance_number,
+                 time_sleep_update_velocity = time_sleep_update_velocity,
+                 params = params)
 
 def get_local_ip():
     """
@@ -41,7 +64,7 @@ def main():
                 "max_acceleration": 1,
                 "max_speed": 0.6,
             }
-    swarm_comm = SwarmCommunicator(control_object=drone,
+    swarm_comm = Swarmc(control_object=drone,
                                    broadcast_port=37020,
                                    broadcast_interval=0.5,
                                    ip=ip,
