@@ -45,6 +45,7 @@ def main():
                                    broadcast_port=37020,
                                    broadcast_interval=0.5,
                                    ip=ip,
+                                   time_sleep_update_velocity = 0.05,
                                    params=params)
     swarm_comm.start()
     print(f"SwarmCommunicator запущен для {drone.name} с IP {ip}")
