@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import socket
 import time
-from pion import Pion
+from pion import Spion
 from pion.annotation import Array3, Array2
 from pion.cython_pid import PIDController
 from pion.functions import compute_swarm_velocity 
@@ -9,6 +9,7 @@ from pion.server import SwarmCommunicator
 from typing import Any, Optional, Union
 import numpy as np
 from params import params
+
 
 class Swarmc(SwarmCommunicator):
     def __init__(self,
@@ -88,13 +89,14 @@ def get_local_ip():
 def main():
     # Получаем локальный IP-адрес
     ip = get_local_ip()
-    drone = Pion(ip='/dev/ttyS0',
+    drone = Spion(ip='/dev/ttyS0',
                  mavlink_port=230400,
                  connection_method='serial',
                  name=f"Drone-{ip}",
                  dt=0.001,
                  logger=True,
-                 max_speed=0.5)
+                 max_speed=0.5,
+                 mass=0.4)
 
     swarm_comm = Swarmc(control_object=drone,
                                    broadcast_port=37020,
