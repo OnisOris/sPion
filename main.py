@@ -2,9 +2,11 @@
 import socket
 import time
 from pion import Pion
+from pion.annotation import Array3, Array2
+from pion.cython_pid import PIDController
 from pion.functions import compute_swarm_velocity 
 from pion.server import SwarmCommunicator
-from typing import Any, Optional
+from typing import Any, Optional, Union
 import numpy as np
 
 class Swarmc(SwarmCommunicator):
@@ -28,9 +30,42 @@ class Swarmc(SwarmCommunicator):
                  instance_number = instance_number,
                  time_sleep_update_velocity = time_sleep_update_velocity,
                  params = params)
-    def update_swarm_control(self, target_point) -> None:
-        new_vel = compute_swarm_velocity(self.control_object.position, self.env, target_point)
+        self.position_pid_matrix = np.array([[0.5] * self.control_object.dimension,
+                                             [0.0] * self.control_object.dimension,
+                                             [0.7] * self.control_object.dimension
+                                            ], dtype=np.float64)
+        self._pid_position_controller: Optional[PIDController] = None
+
+
+    def update_swarm_control(self, target_point, dt) -> None:
+        signal = np.clip(
+            self._pid_position_controller.compute_control(
+                target_position=np.array(target_point, dtype=np.float64),
+                current_position=self.control_object.xyz[0:2],
+                dt=dt),
+            -self.max_speed,
+            self.max_speed)
+        swarm_part = compute_swarm_velocity(self.control_object.position, self.env, target_point)
+        new_vel = signal + swarm_part
         self.control_object.t_speed = np.array([new_vel[0], new_vel[1], 0, 0])
+
+    
+    def smart_point_tacking(self):
+        print(f"Smart point tracking")
+        self.control_object.set_v()
+        self.control_object.point_reached = False
+        self.control_object.tracking = True
+        self._pid_position_controller = PIDController(*self.position_pid_matrix) 
+        last_time = time.time()
+        time.sleep(self.time_sleep_update_velocity)
+        while self.control_object.tracking:
+            current_time = time.time()
+            dt = current_time - last_time
+            last_time = current_time
+            self.update_swarm_control(self.control_object.target_point[0:2], dt)
+            time.sleep(self.time_sleep_update_velocity)
+        self.t_speed = np.zeros(4)
+
 
 def get_local_ip():
     """
@@ -59,7 +94,7 @@ def main():
                  logger=True,
                  max_speed=0.5)
     params = {
-                "attraction_weight": 1.0,
+                "attraction_weight": 0.5,
                 "cohesion_weight": 1.0,
                 "alignment_weight": 1.0,
                 "repulsion_weight": 4.0,
