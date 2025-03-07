@@ -19,7 +19,8 @@ class Swarmc(SwarmCommunicator):
                  ip = None,
                  instance_number = None,
                  time_sleep_update_velocity: float = 0.1,
-                 params: Optional[dict] = None):
+                 params: Optional[dict] = None,
+                 d: int = 2):
         SwarmCommunicator.__init__(self,
                  control_object = control_object,
                  broadcast_port = broadcast_port, 
@@ -30,9 +31,9 @@ class Swarmc(SwarmCommunicator):
                  instance_number = instance_number,
                  time_sleep_update_velocity = time_sleep_update_velocity,
                  params = params)
-        self.position_pid_matrix = np.array([[0.5] * self.control_object.dimension,
-                                             [0.0] * self.control_object.dimension,
-                                             [0.7] * self.control_object.dimension
+        self.position_pid_matrix = np.array([[0.5] * d,
+                                             [0.0] * d,
+                                             [0.7] * d
                                             ], dtype=np.float64)
         self._pid_position_controller: Optional[PIDController] = None
 
