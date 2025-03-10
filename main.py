@@ -4,7 +4,7 @@ import time
 from pion import Pion
 from pion.annotation import Array3, Array2
 from pion.cython_pid import PIDController
-from pion.functions import compute_swarm_velocity 
+from pion.functions import compute_swarm_velocity_pid 
 from pion.server import SwarmCommunicator
 from typing import Any, Optional, Union
 import numpy as np
@@ -47,7 +47,7 @@ class Swarmc(SwarmCommunicator):
                 dt=dt),
             -self.max_speed,
             self.max_speed)
-        swarm_part = compute_swarm_velocity(self.control_object.position, self.env, target_point)
+        swarm_part = compute_swarm_velocity_pid(self.control_object.position, self.env, target_point)
         new_vel = signal + swarm_part
         self.control_object.t_speed = np.array([new_vel[0], new_vel[1], 0, 0])
 
@@ -100,7 +100,7 @@ def main():
                                    broadcast_port=37020,
                                    broadcast_interval=0.5,
                                    ip=ip,
-                                   time_sleep_update_velocity = 0.05,
+                                   time_sleep_update_velocity = 0.1,
                                    params=params)
     swarm_comm.start()
     print(f"SwarmCommunicator запущен для {drone.name} с IP {ip}")
