@@ -32,7 +32,7 @@ class Swarmc(SwarmCommunicator):
                  instance_number = instance_number,
                  time_sleep_update_velocity = time_sleep_update_velocity,
                  params = params)
-        self.position_pid_matrix = np.array([[0.1] * d,
+        self.position_pid_matrix = np.array([[0.05] * d,
                                              [0.0] * d,
                                              [0.7] * d
                                             ], dtype=np.float64)
