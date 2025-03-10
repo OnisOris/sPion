@@ -47,7 +47,7 @@ class Swarmc(SwarmCommunicator):
                 dt=dt),
             -self.max_speed,
             self.max_speed)
-        swarm_part = compute_swarm_velocity_pid(self.control_object.position, self.env, target_point)
+        swarm_part = compute_swarm_velocity_pid(self.control_object.position, self.env, target_point, params=self.params)
         new_vel = signal + swarm_part
         self.control_object.t_speed = np.array([new_vel[0], new_vel[1], 0, 0])
 
