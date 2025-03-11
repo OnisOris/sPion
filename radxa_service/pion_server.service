@@ -1,0 +1,16 @@
+ [Unit]
+Description=Pion Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=radxa
+WorkingDirectory=/home/radxa/code/sPion
+ExecStart=/bin/bash -c 'cd /home/radxa/code/sPion && git pull && source .venv/bin/activate && python3 main.py'
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
