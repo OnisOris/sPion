@@ -9,7 +9,7 @@ WorkingDirectory=/home/radxa/code/sPion
 # Выполняем git pull перед запуском сервиса:
 ExecStartPre=/usr/bin/git -C /home/radxa/code/sPion pull
 # Используем прямой путь к python из виртуального окружения:
-ExecStart=/home/radxa/code/sPion/.venv/bin/python3 /home/radxa/code/sPion/main.py
+ExecStart=/home/radxa/code/sPion/.venv/bin/python3 /home/radxa/code/sPion/main_radxa.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
