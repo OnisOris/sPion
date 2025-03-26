@@ -107,7 +107,7 @@ class RadxaInstaller:
     def install_pion_dependencies(self):
         """Install Pion specific dependencies"""
         print("\nInstalling Pion dependencies...")
-        cmd = "sudo curl -sSL https://raw.githubusercontent.com/OnisOris/pion/dev/install_scripts/install_linux.sh | sudo bash"
+        cmd = "sudo curl -sSL https://raw.githubusercontent.com/OnisOris/pion/refs/heads/dev/scripts/install_linux.sh | sudo bash"
         exit_code, _, _ = self.exec_sudo(cmd, timeout=300)
         if exit_code != 0:
             raise RuntimeError("Pion dependencies installation failed")
