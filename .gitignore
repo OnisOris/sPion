@@ -176,4 +176,5 @@ latex/
 .venv/
 pion_server.log
 setup_all.py
+uv.lock
 

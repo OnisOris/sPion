@@ -5,7 +5,7 @@ from pion import Pion
 from pion.annotation import Array3, Array2
 from pion.cython_pid import PIDController
 from pion.functions import compute_swarm_velocity_pid 
-from pion.server import SwarmCommunicator
+from swarm_server import SwarmCommunicator
 from typing import Any, Optional, Union
 import numpy as np
 from params import params

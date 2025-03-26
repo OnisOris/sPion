@@ -74,7 +74,11 @@ class RadxaInstaller:
         cmds = [
             "apt-get update",
             "apt-get install -y python3 python3-pip wget curl git",
-            "python3 -m pip install --upgrade pip"
+            "python3 -m pip install --upgrade pip",
+            "curl -LsSf https://astral.sh/uv/install.sh | sh",
+            "sudo bash -c 'source $HOME/.local/bin/env'"
+
+
         ]
         for cmd in cmds:
             exit_code, _, _ = self.exec_sudo(cmd, timeout=300)
@@ -97,20 +101,20 @@ class RadxaInstaller:
         print("\nSetting up virtual environment...")
         cmds = [
             "cd ~/code/sPion",
-            "python3 -m venv .venv --clear",
-            "source .venv/bin/activate && pip install -r requirements.txt"
+            "uv venv --python 3.13",
+            "source .venv/bin/activate && uv sync"
         ]
         exit_code, _, _ = self.exec_command(" && ".join(cmds), timeout=120)
         if exit_code != 0:
             raise RuntimeError("Virtual environment setup failed")
 
-    def install_pion_dependencies(self):
-        """Install Pion specific dependencies"""
-        print("\nInstalling Pion dependencies...")
-        cmd = "sudo curl -sSL https://raw.githubusercontent.com/OnisOris/pion/refs/heads/dev/scripts/install_linux.sh | sudo bash"
-        exit_code, _, _ = self.exec_sudo(cmd, timeout=300)
-        if exit_code != 0:
-            raise RuntimeError("Pion dependencies installation failed")
+    # def install_pion_dependencies(self):
+    #     """Install Pion specific dependencies"""
+    #     print("\nInstalling Pion dependencies...")
+    #     cmd = "sudo curl -sSL https://raw.githubusercontent.com/OnisOris/pion/refs/heads/dev/scripts/install_linux.sh | sudo bash"
+    #     exit_code, _, _ = self.exec_sudo(cmd, timeout=300)
+    #     if exit_code != 0:
+    #         raise RuntimeError("Pion dependencies installation failed")
 
     def configure_service(self):
         """Create systemd service file"""
@@ -124,7 +128,7 @@ class RadxaInstaller:
         [Service]
         User={self.ssh_user}
         WorkingDirectory=/home/{self.ssh_user}/code/sPion
-        ExecStart=/bin/bash -c 'cd /home/{self.ssh_user}/code/sPion && git pull && source .venv/bin/activate && python3 main.py'
+        ExecStart=/bin/bash -c 'cd /home/{self.ssh_user}/code/sPion && git pull && source .venv/bin/activate && uv run main.py'
         Restart=always
         RestartSec=10
         StandardOutput=journal
@@ -166,7 +170,7 @@ class RadxaInstaller:
             self.install_dependencies()
             self.clone_repo()
             self.setup_virtualenv()
-            self.install_pion_dependencies()
+            # self.install_pion_dependencies()
             self.configure_service()
             self.enable_service()
 
