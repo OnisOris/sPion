@@ -1,0 +1,37 @@
+[project]
+name = "sPion"
+version = "0.0.1"
+description = "App to control drones"
+requires-python = ">=3.10"
+authors = [
+    {name = "Michael", email = "onisoris@yandex.ru"},
+]
+maintainers = [
+    {name = "Michael", email = "onisoris@yandex.ru"}
+]
+dependencies = [
+    "pion @ git+https://github.com/OnisOris/pion@dev",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Independent Audience :: Developers",
+    "Topic :: Software Development :: Build Tools",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+license = {file = "LICENSE"}
+readme = {file = "README.md", content-type = "text/markdown"}
+
+[project.urls]
+Homepage = "https://github.com/OnisOris/sPion"
+Documentation = "https://onisoris.github.io/sPion"
+Repository = "https://github.com/OnisOris/sPion.git"
+Issues = "https://github.com/OnisOris/sPion/issues"
+pion = "https://github.com/OnisOris/pion"
+
+[project.scripts]
+start_server = "scripts.main:main"
+start_radxa_server = "scripts.main_radxa:main"
+

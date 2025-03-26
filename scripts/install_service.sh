@@ -40,7 +40,7 @@ else
 fi
 
 echo "Скачивание installer.py из репозитория..."
-curl -sSL "https://raw.githubusercontent.com/OnisOris/sPion/refs/heads/main/remote_installer/installer.py" -o installer.py
+curl -sSL "https://raw.githubusercontent.com/OnisOris/sPion/refs/heads/main/scripts/remote_installer/installer.py" -o installer.py
 
 if [ ! -f installer.py ]; then
     echo "Ошибка загрузки installer.py"

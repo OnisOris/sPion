@@ -100,7 +100,7 @@ class RemoteServiceInstaller:
                     raise Exception("Ошибка удаления пакета pion из виртуального окружения")
 
             # Выполняем установку зависимостей Pion через внешний скрипт
-            install_cmd = ("cd ~/code/sPion && sudo -E curl -sSL https://raw.githubusercontent.com/OnisOris/pion/refs/heads/dev/install_scripts/install_linux.sh | sudo -E bash")
+            install_cmd = ("cd ~/code/sPion && sudo -E curl -sSL https://raw.githubusercontent.com/OnisOris/pion/refs/heads/dev/scripts/install_linux.sh | sudo -E bash")
             exit_code, _, _ = self.exec_command(install_cmd, timeout=60)
             if exit_code != 0:
                 raise Exception("Ошибка установки зависимостей Pion")
