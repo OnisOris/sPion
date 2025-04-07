@@ -10,7 +10,7 @@ maintainers = [
     {name = "Michael", email = "onisoris@yandex.ru"}
 ]
 dependencies = [
-    "pion @ git+https://github.com/OnisOris/pion@dev",
+    "pionsdk @ git+https://github.com/OnisOris/pion@dev",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -32,6 +32,6 @@ Issues = "https://github.com/OnisOris/sPion/issues"
 pion = "https://github.com/OnisOris/pion"
 
 [project.scripts]
-start_server = "scripts.main:main"
-start_radxa_server = "scripts.main_radxa:main"
+start_server = "src.swarmpion.scripts.main:main"
+start_radxa_server = "src.swarmpion.scripts.main_radxa:main"
 
